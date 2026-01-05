@@ -40,7 +40,7 @@ export type Genre = $Result.DefaultSelection<Prisma.$GenrePayload>
  */
 export class PrismaClient<
   ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  const U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
@@ -72,13 +72,6 @@ export class PrismaClient<
    * Disconnect from the database
    */
   $disconnect(): $Utils.JsPromise<void>;
-
-  /**
-   * Add a middleware
-   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
-   * @see https://pris.ly/d/extensions
-   */
-  $use(cb: Prisma.Middleware): void
 
 /**
    * Executes a prepared raw query and returns the number of affected rows.
@@ -226,8 +219,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.6.0
-   * Query Engine version: f676762280b54cd07c770017ed3711ddde35f37a
+   * Prisma Client JS version: 6.19.1
+   * Query Engine version: c2990dca591cba766e3b7ef5d9e8a84796e47ab7
    */
   export type PrismaVersion = {
     client: string
@@ -240,6 +233,7 @@ export namespace Prisma {
    */
 
 
+  export import Bytes = runtime.Bytes
   export import JsonObject = runtime.JsonObject
   export import JsonArray = runtime.JsonArray
   export import JsonValue = runtime.JsonValue
@@ -823,16 +817,24 @@ export namespace Prisma {
     /**
      * @example
      * ```
-     * // Defaults to stdout
+     * // Shorthand for `emit: 'stdout'`
      * log: ['query', 'info', 'warn', 'error']
      * 
-     * // Emit as events
+     * // Emit as events only
      * log: [
-     *   { emit: 'stdout', level: 'query' },
-     *   { emit: 'stdout', level: 'info' },
-     *   { emit: 'stdout', level: 'warn' }
-     *   { emit: 'stdout', level: 'error' }
+     *   { emit: 'event', level: 'query' },
+     *   { emit: 'event', level: 'info' },
+     *   { emit: 'event', level: 'warn' }
+     *   { emit: 'event', level: 'error' }
      * ]
+     * 
+     * / Emit as events and log to stdout
+     * og: [
+     *  { emit: 'stdout', level: 'query' },
+     *  { emit: 'stdout', level: 'info' },
+     *  { emit: 'stdout', level: 'warn' }
+     *  { emit: 'stdout', level: 'error' }
+     * 
      * ```
      * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
@@ -847,6 +849,10 @@ export namespace Prisma {
       timeout?: number
       isolationLevel?: Prisma.TransactionIsolationLevel
     }
+    /**
+     * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
+     */
+    adapter?: runtime.SqlDriverAdapterFactory | null
     /**
      * Global configuration for omitting model fields by default.
      * 
@@ -875,10 +881,15 @@ export namespace Prisma {
     emit: 'stdout' | 'event'
   }
 
-  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
-  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
-    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
-    : never
+  export type CheckIsLogLevel<T> = T extends LogLevel ? T : never;
+
+  export type GetLogType<T> = CheckIsLogLevel<
+    T extends LogDefinition ? T['level'] : T
+  >;
+
+  export type GetEvents<T extends any[]> = T extends Array<LogLevel | LogDefinition>
+    ? GetLogType<T[number]>
+    : never;
 
   export type QueryEvent = {
     timestamp: Date
@@ -918,25 +929,6 @@ export namespace Prisma {
     | 'runCommandRaw'
     | 'findRaw'
     | 'groupBy'
-
-  /**
-   * These options are being passed into the middleware as "params"
-   */
-  export type MiddlewareParams = {
-    model?: ModelName
-    action: PrismaAction
-    args: any
-    dataPath: string[]
-    runInTransaction: boolean
-  }
-
-  /**
-   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
-   */
-  export type Middleware<T = any> = (
-    params: MiddlewareParams,
-    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
-  ) => $Utils.JsPromise<T>
 
   // tested in getLogLevel.test.ts
   export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
@@ -1004,12 +996,16 @@ export namespace Prisma {
 
   export type BookAvgAggregateOutputType = {
     id: number | null
+    pages: number | null
+    rating: number | null
     year: number | null
     genreId: number | null
   }
 
   export type BookSumAggregateOutputType = {
     id: number | null
+    pages: number | null
+    rating: number | null
     year: number | null
     genreId: number | null
   }
@@ -1018,10 +1014,10 @@ export namespace Prisma {
     id: number | null
     title: string | null
     author: string | null
-    pages: string | null
+    pages: number | null
     isbn: string | null
     status: string | null
-    rating: string | null
+    rating: number | null
     synopsis: string | null
     cover: string | null
     year: number | null
@@ -1035,10 +1031,10 @@ export namespace Prisma {
     id: number | null
     title: string | null
     author: string | null
-    pages: string | null
+    pages: number | null
     isbn: string | null
     status: string | null
-    rating: string | null
+    rating: number | null
     synopsis: string | null
     cover: string | null
     year: number | null
@@ -1069,12 +1065,16 @@ export namespace Prisma {
 
   export type BookAvgAggregateInputType = {
     id?: true
+    pages?: true
+    rating?: true
     year?: true
     genreId?: true
   }
 
   export type BookSumAggregateInputType = {
     id?: true
+    pages?: true
+    rating?: true
     year?: true
     genreId?: true
   }
@@ -1221,10 +1221,10 @@ export namespace Prisma {
     id: number
     title: string
     author: string
-    pages: string | null
+    pages: number | null
     isbn: string | null
     status: string
-    rating: string | null
+    rating: number | null
     synopsis: string | null
     cover: string | null
     year: number | null
@@ -1344,10 +1344,10 @@ export namespace Prisma {
       id: number
       title: string
       author: string
-      pages: string | null
+      pages: number | null
       isbn: string | null
       status: string
-      rating: string | null
+      rating: number | null
       synopsis: string | null
       cover: string | null
       year: number | null
@@ -1782,10 +1782,10 @@ export namespace Prisma {
     readonly id: FieldRef<"Book", 'Int'>
     readonly title: FieldRef<"Book", 'String'>
     readonly author: FieldRef<"Book", 'String'>
-    readonly pages: FieldRef<"Book", 'String'>
+    readonly pages: FieldRef<"Book", 'Int'>
     readonly isbn: FieldRef<"Book", 'String'>
     readonly status: FieldRef<"Book", 'String'>
-    readonly rating: FieldRef<"Book", 'String'>
+    readonly rating: FieldRef<"Book", 'Int'>
     readonly synopsis: FieldRef<"Book", 'String'>
     readonly cover: FieldRef<"Book", 'String'>
     readonly year: FieldRef<"Book", 'Int'>
@@ -3366,10 +3366,10 @@ export namespace Prisma {
     id?: IntFilter<"Book"> | number
     title?: StringFilter<"Book"> | string
     author?: StringFilter<"Book"> | string
-    pages?: StringNullableFilter<"Book"> | string | null
+    pages?: IntNullableFilter<"Book"> | number | null
     isbn?: StringNullableFilter<"Book"> | string | null
     status?: StringFilter<"Book"> | string
-    rating?: StringNullableFilter<"Book"> | string | null
+    rating?: IntNullableFilter<"Book"> | number | null
     synopsis?: StringNullableFilter<"Book"> | string | null
     cover?: StringNullableFilter<"Book"> | string | null
     year?: IntNullableFilter<"Book"> | number | null
@@ -3400,15 +3400,15 @@ export namespace Prisma {
 
   export type BookWhereUniqueInput = Prisma.AtLeast<{
     id?: number
-    title?: string
     AND?: BookWhereInput | BookWhereInput[]
     OR?: BookWhereInput[]
     NOT?: BookWhereInput | BookWhereInput[]
+    title?: StringFilter<"Book"> | string
     author?: StringFilter<"Book"> | string
-    pages?: StringNullableFilter<"Book"> | string | null
+    pages?: IntNullableFilter<"Book"> | number | null
     isbn?: StringNullableFilter<"Book"> | string | null
     status?: StringFilter<"Book"> | string
-    rating?: StringNullableFilter<"Book"> | string | null
+    rating?: IntNullableFilter<"Book"> | number | null
     synopsis?: StringNullableFilter<"Book"> | string | null
     cover?: StringNullableFilter<"Book"> | string | null
     year?: IntNullableFilter<"Book"> | number | null
@@ -3417,7 +3417,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Book"> | Date | string
     updatedAt?: DateTimeFilter<"Book"> | Date | string
     genre?: XOR<GenreScalarRelationFilter, GenreWhereInput>
-  }, "id" | "title">
+  }, "id">
 
   export type BookOrderByWithAggregationInput = {
     id?: SortOrder
@@ -3448,10 +3448,10 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"Book"> | number
     title?: StringWithAggregatesFilter<"Book"> | string
     author?: StringWithAggregatesFilter<"Book"> | string
-    pages?: StringNullableWithAggregatesFilter<"Book"> | string | null
+    pages?: IntNullableWithAggregatesFilter<"Book"> | number | null
     isbn?: StringNullableWithAggregatesFilter<"Book"> | string | null
     status?: StringWithAggregatesFilter<"Book"> | string
-    rating?: StringNullableWithAggregatesFilter<"Book"> | string | null
+    rating?: IntNullableWithAggregatesFilter<"Book"> | number | null
     synopsis?: StringNullableWithAggregatesFilter<"Book"> | string | null
     cover?: StringNullableWithAggregatesFilter<"Book"> | string | null
     year?: IntNullableWithAggregatesFilter<"Book"> | number | null
@@ -3506,10 +3506,10 @@ export namespace Prisma {
   export type BookCreateInput = {
     title: string
     author: string
-    pages?: string | null
+    pages?: number | null
     isbn?: string | null
     status: string
-    rating?: string | null
+    rating?: number | null
     synopsis?: string | null
     cover?: string | null
     year?: number | null
@@ -3523,10 +3523,10 @@ export namespace Prisma {
     id?: number
     title: string
     author: string
-    pages?: string | null
+    pages?: number | null
     isbn?: string | null
     status: string
-    rating?: string | null
+    rating?: number | null
     synopsis?: string | null
     cover?: string | null
     year?: number | null
@@ -3539,10 +3539,10 @@ export namespace Prisma {
   export type BookUpdateInput = {
     title?: StringFieldUpdateOperationsInput | string
     author?: StringFieldUpdateOperationsInput | string
-    pages?: NullableStringFieldUpdateOperationsInput | string | null
+    pages?: NullableIntFieldUpdateOperationsInput | number | null
     isbn?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    rating?: NullableStringFieldUpdateOperationsInput | string | null
+    rating?: NullableIntFieldUpdateOperationsInput | number | null
     synopsis?: NullableStringFieldUpdateOperationsInput | string | null
     cover?: NullableStringFieldUpdateOperationsInput | string | null
     year?: NullableIntFieldUpdateOperationsInput | number | null
@@ -3556,10 +3556,10 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     author?: StringFieldUpdateOperationsInput | string
-    pages?: NullableStringFieldUpdateOperationsInput | string | null
+    pages?: NullableIntFieldUpdateOperationsInput | number | null
     isbn?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    rating?: NullableStringFieldUpdateOperationsInput | string | null
+    rating?: NullableIntFieldUpdateOperationsInput | number | null
     synopsis?: NullableStringFieldUpdateOperationsInput | string | null
     cover?: NullableStringFieldUpdateOperationsInput | string | null
     year?: NullableIntFieldUpdateOperationsInput | number | null
@@ -3573,10 +3573,10 @@ export namespace Prisma {
     id?: number
     title: string
     author: string
-    pages?: string | null
+    pages?: number | null
     isbn?: string | null
     status: string
-    rating?: string | null
+    rating?: number | null
     synopsis?: string | null
     cover?: string | null
     year?: number | null
@@ -3589,10 +3589,10 @@ export namespace Prisma {
   export type BookUpdateManyMutationInput = {
     title?: StringFieldUpdateOperationsInput | string
     author?: StringFieldUpdateOperationsInput | string
-    pages?: NullableStringFieldUpdateOperationsInput | string | null
+    pages?: NullableIntFieldUpdateOperationsInput | number | null
     isbn?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    rating?: NullableStringFieldUpdateOperationsInput | string | null
+    rating?: NullableIntFieldUpdateOperationsInput | number | null
     synopsis?: NullableStringFieldUpdateOperationsInput | string | null
     cover?: NullableStringFieldUpdateOperationsInput | string | null
     year?: NullableIntFieldUpdateOperationsInput | number | null
@@ -3605,10 +3605,10 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     author?: StringFieldUpdateOperationsInput | string
-    pages?: NullableStringFieldUpdateOperationsInput | string | null
+    pages?: NullableIntFieldUpdateOperationsInput | number | null
     isbn?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    rating?: NullableStringFieldUpdateOperationsInput | string | null
+    rating?: NullableIntFieldUpdateOperationsInput | number | null
     synopsis?: NullableStringFieldUpdateOperationsInput | string | null
     cover?: NullableStringFieldUpdateOperationsInput | string | null
     year?: NullableIntFieldUpdateOperationsInput | number | null
@@ -3679,6 +3679,17 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -3691,17 +3702,6 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
-  export type IntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type DateTimeFilter<$PrismaModel = never> = {
@@ -3744,6 +3744,8 @@ export namespace Prisma {
 
   export type BookAvgOrderByAggregateInput = {
     id?: SortOrder
+    pages?: SortOrder
+    rating?: SortOrder
     year?: SortOrder
     genreId?: SortOrder
   }
@@ -3784,6 +3786,8 @@ export namespace Prisma {
 
   export type BookSumOrderByAggregateInput = {
     id?: SortOrder
+    pages?: SortOrder
+    rating?: SortOrder
     year?: SortOrder
     genreId?: SortOrder
   }
@@ -3821,6 +3825,22 @@ export namespace Prisma {
     _max?: NestedStringFilter<$PrismaModel>
   }
 
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -3836,22 +3856,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -3911,16 +3915,16 @@ export namespace Prisma {
     set?: string
   }
 
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null
-  }
-
   export type NullableIntFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
     decrement?: number
     multiply?: number
     divide?: number
+  }
+
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -4010,6 +4014,17 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type NestedStringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -4022,17 +4037,6 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -4090,23 +4094,6 @@ export namespace Prisma {
     _max?: NestedStringFilter<$PrismaModel>
   }
 
-  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | null
-    notIn?: string[] | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | null
@@ -4132,6 +4119,23 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | null
+    notIn?: string[] | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -4185,10 +4189,10 @@ export namespace Prisma {
   export type BookCreateWithoutGenreInput = {
     title: string
     author: string
-    pages?: string | null
+    pages?: number | null
     isbn?: string | null
     status: string
-    rating?: string | null
+    rating?: number | null
     synopsis?: string | null
     cover?: string | null
     year?: number | null
@@ -4201,10 +4205,10 @@ export namespace Prisma {
     id?: number
     title: string
     author: string
-    pages?: string | null
+    pages?: number | null
     isbn?: string | null
     status: string
-    rating?: string | null
+    rating?: number | null
     synopsis?: string | null
     cover?: string | null
     year?: number | null
@@ -4245,10 +4249,10 @@ export namespace Prisma {
     id?: IntFilter<"Book"> | number
     title?: StringFilter<"Book"> | string
     author?: StringFilter<"Book"> | string
-    pages?: StringNullableFilter<"Book"> | string | null
+    pages?: IntNullableFilter<"Book"> | number | null
     isbn?: StringNullableFilter<"Book"> | string | null
     status?: StringFilter<"Book"> | string
-    rating?: StringNullableFilter<"Book"> | string | null
+    rating?: IntNullableFilter<"Book"> | number | null
     synopsis?: StringNullableFilter<"Book"> | string | null
     cover?: StringNullableFilter<"Book"> | string | null
     year?: IntNullableFilter<"Book"> | number | null
@@ -4262,10 +4266,10 @@ export namespace Prisma {
     id?: number
     title: string
     author: string
-    pages?: string | null
+    pages?: number | null
     isbn?: string | null
     status: string
-    rating?: string | null
+    rating?: number | null
     synopsis?: string | null
     cover?: string | null
     year?: number | null
@@ -4277,10 +4281,10 @@ export namespace Prisma {
   export type BookUpdateWithoutGenreInput = {
     title?: StringFieldUpdateOperationsInput | string
     author?: StringFieldUpdateOperationsInput | string
-    pages?: NullableStringFieldUpdateOperationsInput | string | null
+    pages?: NullableIntFieldUpdateOperationsInput | number | null
     isbn?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    rating?: NullableStringFieldUpdateOperationsInput | string | null
+    rating?: NullableIntFieldUpdateOperationsInput | number | null
     synopsis?: NullableStringFieldUpdateOperationsInput | string | null
     cover?: NullableStringFieldUpdateOperationsInput | string | null
     year?: NullableIntFieldUpdateOperationsInput | number | null
@@ -4293,10 +4297,10 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     author?: StringFieldUpdateOperationsInput | string
-    pages?: NullableStringFieldUpdateOperationsInput | string | null
+    pages?: NullableIntFieldUpdateOperationsInput | number | null
     isbn?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    rating?: NullableStringFieldUpdateOperationsInput | string | null
+    rating?: NullableIntFieldUpdateOperationsInput | number | null
     synopsis?: NullableStringFieldUpdateOperationsInput | string | null
     cover?: NullableStringFieldUpdateOperationsInput | string | null
     year?: NullableIntFieldUpdateOperationsInput | number | null
@@ -4309,10 +4313,10 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     author?: StringFieldUpdateOperationsInput | string
-    pages?: NullableStringFieldUpdateOperationsInput | string | null
+    pages?: NullableIntFieldUpdateOperationsInput | number | null
     isbn?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    rating?: NullableStringFieldUpdateOperationsInput | string | null
+    rating?: NullableIntFieldUpdateOperationsInput | number | null
     synopsis?: NullableStringFieldUpdateOperationsInput | string | null
     cover?: NullableStringFieldUpdateOperationsInput | string | null
     year?: NullableIntFieldUpdateOperationsInput | number | null
