@@ -19,6 +19,9 @@ jobs:
       - name: Build da aplicação 
         run: npm run build
         working-directory: ./projeto-bookshelf
+      - name: Teste da aplicação
+        run: npm test
+        working-directory: ./projeto-bookshelf
       - name: Testar start da aplicação 
         run: |
           timeout 10 npm start &
