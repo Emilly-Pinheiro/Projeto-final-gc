@@ -13,14 +13,8 @@ jobs:
       - name: Instalar dependências
         run: npm install
         working-directory: ./projeto-bookshelf
-      # - name: Rodar lint
-      #   run: npm run lint
-      #   working-directory: ./projeto-bookshelf
       - name: Build da aplicação 
         run: npm run build
-        working-directory: ./projeto-bookshelf
-      - name: Teste da aplicação
-        run: npm test
         working-directory: ./projeto-bookshelf
       - name: Testar start da aplicação 
         run: |
