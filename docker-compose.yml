@@ -25,6 +25,6 @@ services:
       db:
         condition: service_healthy
     command: >
-      sh -c "npx prisma migrate deploy && npm start"
+      sh -c "npx prisma migrate deploy && npx ts-node --project tsconfig.seed.json prisma/seed.ts && npm start"
 volumes:
   pgdata:
