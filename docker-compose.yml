@@ -14,7 +14,7 @@ services:
       interval: 3s
       timeout: 5s
       retries: 5
-  backend: 
+  backend:
     image: app-library:latest
     environment: 
       DATABASE_URL: ${DATABASE_URL}
