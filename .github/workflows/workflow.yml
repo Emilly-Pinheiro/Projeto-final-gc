@@ -39,7 +39,7 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Popular Banco de Dados (Seed)
+      - name: Popular Banco (Seed)
         run: npx prisma db seed
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }} 
