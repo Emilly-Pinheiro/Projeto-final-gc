@@ -39,7 +39,11 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Deploy to Vercel
+      - name: Popular Banco de Dados (Seed)
+        run: npx prisma db seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }} 
+      - name: Deploy com Vercel
         uses: amondnet/vercel-action@v20
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
